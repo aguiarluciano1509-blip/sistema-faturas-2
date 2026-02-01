@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Fatura</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/1.5.3/jspdf.debug.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; background-color: #f9f9f9; }
+    header { text-align: center; margin-bottom: 30px; }
+    header img { max-width: 140px; margin-bottom: 10px; }
+    h1 { color: #333; margin: 10px 0; }
+    .info { display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px; }
+    .box { background: #fff; padding: 15px; border: 1px solid #ddd; border-radius: 6px; width: 50%; box-sizing: border-box; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #fff; }
+    th { background-color: #0073e6; color: #fff; }
+    table, th, td { border: 1px solid #ddd; }
+    th, td { padding: 10px; text-align: center; }
+    input { width: 95%; padding: 5px; border: 1px solid #ccc; border-radius: 4px; }
+    .totais { text-align: right; margin-top: 20px; font-size: 16px; }
+    footer { text-align: center; margin-top: 40px; font-size: 12px; color: #555; }
+    .btn { display: inline-block; margin: 20px 10px; padding: 10px 20px; background: #0073e6; color: #fff; border: none; border-radius: 5px; cursor: pointer; }
+    .btn:hover { background: #005bb5; }
+    .center { text-align: center; }
+  </style>
+</head>
+<body id="conteudo">
+
+  <header>
+    <img src="logo.png" alt="Logo da Empresa">
+    <h1>FATURA</h1>
+    <h3>Fatura Nº: <span id="numeroFatura"></span></h3>
+  </header>
+
+  <div class="info">
+    <div class="box">
+      <h3>Emitente</h3>
+      <p><input type="text" placeholder="Nome da Empresa"></p>
+      <p><input type="text" placeholder="Endereço"></p>
+      <p><input type="text" placeholder="E-mail"></p>
+      <p><input type="text" placeholder="CNPJ"></p>
+    </div>
+    <div class="box">
+      <h3>Cliente</h3>
+      <p><input type="text" placeholder="Nome do Cliente"></p>
+      <p><input type="text" placeholder="Endereço"></p>
+      <p><input type="text" placeholder="E-mail"></p>
+      <p><input type="text" placeholder="CPF/CNPJ"></p>
+    </div>
+  </div>
+
+  <table id="tabela-itens">
+    <tr>
+      <th>Descrição</th><th>Qtd</th><th>Preço Unitário</th><th>Total</th>
+    </tr>
+    <tr>
+      <td><input type="text" placeholder="Item/Serviço"></td>
+      <td><input type="number" value="1" oninput="calcularTotais()"></td>
+      <td><input type="number" value="0" step="0.01" oninput="calcularTotais()"></td>
+      <td><input type="text" readonly></td>
+    </tr>
+  </table>
+
+  <div class="center">
+    <button class="btn" onclick="adicionarItem()">+ Adicionar item</button>
+  </div>
+
+  <p class="totais"><strong>Subtotal:</strong> <span id="subtotal">R$ 0,00</span></p>
+  <p class="totais"><strong>Total:</strong> <span id="total">R$ 0,00</span></p>
+
+  <div class="box" style="margin-top:20px;">
+    <h3>Observações</h3>
+    <p><input type="text" placeholder="Ex: Pagamento até 10 dias após emissão"></p>
+  </div>
+
+  <footer>
+    <p><input type="text" placeholder="Dados Bancários"></p>
+    <p>Obrigado por fazer negócios conosco!</p>
+  </footer>
+
+  <div class="center">
+    <button class="btn" onclick="gerarPDF()">Gerar PDF</button>
+    <a href="painel.html"><button class="btn">Abrir Painel de Faturas</button></a>
+  </div>
+
+  <script>
+    function carregarNumeroFatura() {
+      let numero = localStorage.getItem("numeroFatura");
+      if (!numero) numero = 1;
+      document.getElementById("numeroFatura").innerText = numero.toString().padStart(3, "0");
+    }
+
+    function incrementarNumeroFatura() {
+      let numero = localStorage.getItem("numeroFatura");
+      numero = numero ? parseInt(numero) + 1 : 1;
+      localStorage.setItem("numeroFatura", numero);
+    }
+
+    function calcularTotais() {
+      let tabela = document.getElementById("tabela-itens");
+      let subtotal = 0;
+
+      for (let i = 1; i < tabela.rows.length; i++) {
+        let qtd = parseFloat(tabela.rows[i].cells[1].children[0].value) || 0;
+        let preco = parseFloat(tabela.rows[i].cells[2].children[0].value) || 0;
+        let total = qtd * preco;
+        tabela.rows[i].cells[3].children[0].value = "R$ " + total.toFixed(2);
+        subtotal += total;
+      }
+
+      document.getElementById("subtotal").innerText = "R$ " + subtotal.toFixed(2);
+      document.getElementById("total").innerText = "R$ " + subtotal.toFixed(2);
+    }
+
+    function adicionarItem() {
+      let tabela = document.getElementById("tabela-itens");
+      let novaLinha = tabela.insertRow();
+      novaLinha.innerHTML = `
+        <td><input type="text" placeholder="Item/Serviço"></td>
+        <td><input type="number" value="1" oninput="calcularTotais()"></td>
+        <td><input type="number" value="0" step="0.01" oninput="calcularTotais()"></td>
+        <td><input type="text" readonly></td>
+      `;
+    }
+
+    function salvarFatura() {
+      let numero = document.getElementById("numeroFatura").innerText;
+      let total = document.getElementById("total").innerText.replace("R$ ", "");
+      let data = new Date().toLocaleDateString("pt-BR");
+
+      let faturas = JSON.parse(localStorage.getItem("faturas")) || [];
+
+      faturas.push({
+        numero: numero,
+        data: data,
+        total: total
+      });
+
+      localStorage.setItem("faturas", JSON.stringify(faturas));
+    }
+
+    async function gerarPDF() {
+      const element = document.body;
+
+      html2canvas(element, { scale: 2 }).then(canvas => {
+        const imgData = canvas.toDataURL("image/png");
+        const pdf = new jsPDF("p", "mm", "a4");
+
+        const imgWidth = 210;
+        const pageHeight = 295;
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        pdf.save("fatura.pdf");
+
+        salvarFatura();
+        incrementarNumeroFatura();
+        carregarNumeroFatura();
+      });
+    }
+
+    window.onload = function() {
+      carregarNumeroFatura();
+      calcularTotais();
+    };
+  </script>
+
+</body>
+</html>
