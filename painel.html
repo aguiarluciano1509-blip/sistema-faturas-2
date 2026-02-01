@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel de Faturas</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      margin: 40px; 
+      background-color: #f9f9f9; 
+    }
+
+    h1 { 
+      color: #333; 
+      text-align: center;
+    }
+
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin-top: 20px; 
+      background: #fff; 
+    }
+
+    th, td { 
+      border: 1px solid #ccc; 
+      padding: 10px; 
+      text-align: center; 
+    }
+
+    th { 
+      background: #0073e6; 
+      color: #fff; 
+    }
+
+    .btn {
+      display: inline-block;
+      margin: 20px 0;
+      padding: 10px 20px;
+      background: #0073e6;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 15px;
+    }
+
+    .btn:hover {
+      background: #005bb5;
+    }
+
+    .center {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Painel de Faturas Emitidas</h1>
+
+  <div class="center">
+    <a href="index.html" class="btn">Voltar para Faturamento</a>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Número</th>
+        <th>Data</th>
+        <th>Total</th>
+      </tr>
+    </thead>
+    <tbody id="listaFaturas"></tbody>
+  </table>
+
+  <script>
+    function carregarFaturas() {
+      let faturas = JSON.parse(localStorage.getItem("faturas")) || [];
+      let tabela = document.getElementById("listaFaturas");
+
+      if (faturas.length === 0) {
+        let linha = document.createElement("tr");
+        linha.innerHTML = `<td colspan="3">Nenhuma fatura emitida ainda.</td>`;
+        tabela.appendChild(linha);
+        return;
+      }
+
+      faturas.forEach(f => {
+        let linha = document.createElement("tr");
+        linha.innerHTML = `
+          <td>${f.numero}</td>
+          <td>${f.data}</td>
+          <td>R$ ${parseFloat(f.total).toFixed(2)}</td>
+        `;
+        tabela.appendChild(linha);
+      });
+    }
+
+    carregarFaturas();
+  </script>
+
+</body>
+</html>
